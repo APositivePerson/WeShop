@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信小店AI上架助手</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 页面切换 */
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* 我的商品页面 */
+        .products-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .products-list {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .product-item:last-child {
+            border-bottom: none;
+        }
+        
+        .product-info h4 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .product-info p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .status-online {
+            background: #e6f7e6;
+            color: #07C160;
+        }
+        
+        .status-offline {
+            background: #f5f5f5;
+            color: #999;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 13px;
+        }
+        
+        .btn-sync {
+            background: #07C160;
+            color: white;
+        }
+        
+        /* 导航激活状态 */
+        .nav-link.active {
+            color: #07C160;
+            font-weight: 600;
+        }
+        
+        /* 用户信息区 */
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #07C160;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .user-info {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .user-shop {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .btn-logout {
+            padding: 6px 12px;
+            font-size: 12px;
+            background: #f5f5f5;
+            color: #666;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .btn-logout:hover {
+            background: #eee;
+        }
+        
+        /* 店铺选择器 */
+        .shop-selector {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .shop-selector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .shop-selector-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .shop-select {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 200px;
+            cursor: pointer;
+        }
+        
+        .shop-select:focus {
+            outline: none;
+            border-color: #07C160;
+        }
+        
+        .shop-info {
+            display: flex;
+            gap: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .shop-info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .shop-info-label {
+            color: #999;
+        }
+        
+        .shop-info-value {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .permission-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        
+        .permission-tag.can-publish {
+            background: #e6f7e6;
+            color: #07C160;
+        }
+        
+        .permission-tag.can-edit {
+            background: #e6f0ff;
+            color: #3B82F6;
+        }
+        
+        .permission-tag.view-only {
+            background: #f5f5f5;
+            color: #888;
+        }
+        
+        /* 未关联店铺提示 */
+        .no-shop-alert {
+            background: #fff7e6;
+            border: 1px solid #ffd591;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .no-shop-icon {
+            font-size: 32px;
+        }
+        
+        .no-shop-content h4 {
+            margin: 0 0 5px 0;
+            color: #d48806;
+        }
+        
+        .no-shop-content p {
+            margin: 0;
+            color: #ad6800;
+            font-size: 14px;
+        }
+        
+        .btn-associate {
+            margin-left: auto;
+            padding: 10px 20px;
+            background: #07C160;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-associate:hover {
+            background: #06ae56;
+        }
+        
+        /* 权限不足提示 */
+        .permission-denied {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .permission-denied-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .permission-denied h4 {
+            color: #cf1322;
+            margin: 0 0 10px 0;
+        }
+        
+        .permission-denied p {
+            color: #a8071a;
+            margin: 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🛍️</span>
+                <span class="logo-text">微信小店AI上架助手</span>
+            </div>
+            <nav class="nav">
+                <a href="#" class="nav-link active" onclick="showPage('generate')">商品生成</a>
+                <a href="#" class="nav-link" onclick="showPage('products')">我的商品</a>
+                <a href="/settings" class="nav-link">⚙️ 设置</a>
+            </nav>
+            <div class="user-section" id="userSection">
+                <!-- 动态填充用户信息 -->
+            </div>
+        </header>
+
+        <!-- 主内容 -->
+        <main class="main">
+            <!-- ============ 商品生成页面 ============ -->
+            <div id="page-generate" class="page active">
+                <div class="container">
+                    <!-- 店铺选择器 -->
+                    <div class="shop-selector" id="shopSelector" style="display: none;">
+                        <div class="shop-selector-header">
+                            <span class="shop-selector-title">🏪 当前店铺</span>
+                            <select class="shop-select" id="shopSelect" onchange="switchShop()">
+                                <option value="">选择店铺...</option>
+                            </select>
+                        </div>
+                        <div class="shop-info" id="shopInfo">
+                            <!-- 动态填充店铺信息 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 未关联店铺提示 -->
+                    <div class="no-shop-alert" id="noShopAlert" style="display: none;">
+                        <span class="no-shop-icon">🏪</span>
+                        <div class="no-shop-content">
+                            <h4>您还没有关联任何店铺</h4>
+                            <p>关联微信小店后，即可使用AI生成商品并一键上架</p>
+                        </div>
+                        <button class="btn-associate" onclick="showAssociateShopModal()">关联店铺</button>
+                    </div>
+                    
+                    <!-- 输入区域 -->
+                    <section class="input-section">
+                        <h1 class="title">🤖 AI帮你写商品文案</h1>
+                        <p class="subtitle">简单描述你的商品，AI自动生成标题、卖点、详情页</p>
+                        
+                        <div class="input-box">
+                            <textarea 
+                                id="productInput" 
+                                class="input-textarea" 
+                                placeholder="例如：上架一个ins风手机壳，适用于iPhone15，售价39元，库存200"
+                                rows="4"
+                            ></textarea>
+                            <div class="input-actions">
+                                <button class="btn btn-secondary" onclick="showTemplates()">
+                                    📋 查看模板
+                                </button>
+                                <button class="btn btn-primary" onclick="generateProduct()">
+                                    ✨ 开始生成
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 快捷模板 -->
+                        <div class="quick-templates" id="quickTemplates">
+                            <span class="template-label">快速填充：</span>
+                            <button class="template-chip" onclick="fillTemplate('ins风手机壳')">ins风手机壳</button>
+                            <button class="template-chip" onclick="fillTemplate('可爱耳机')">可爱耳机</button>
+                            <button class="template-chip" onclick="fillTemplate('极简T恤')">极简T恤</button>
+                            <button class="template-chip" onclick="fillTemplate('商务背包')">商务背包</button>
+                        </div>
+                    </section>
+
+                    <!-- 生成结果区域 -->
+                    <section class="result-section" id="resultSection" style="display: none;">
+                        <div class="result-header">
+                            <h2 class="result-title">✅ 生成完成</h2>
+                            <div class="result-actions">
+                                <button class="btn btn-secondary" onclick="regenerate()">
+                                    🔄 重新生成
+                                </button>
+                                <button class="btn btn-success" id="publishBtn" onclick="publishProduct()">
+                                    🚀 一键上架
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 权限不足提示 -->
+                        <div class="permission-denied" id="permissionDenied" style="display: none;">
+                            <div class="permission-denied-icon">🔒</div>
+                            <h4>暂无上架权限</h4>
+                            <p>您当前没有该店铺的商品上架权限，请联系店铺管理员</p>
+                        </div>
+
+                        <div class="result-grid">
+                            <!-- 优化标题 -->
+                            <div class="card card-title">
+                                <div class="card-header">
+                                    <span class="card-icon">🏷️</span>
+                                    <h3>优化标题</h3>
+                                    <button class="btn-copy" onclick="copyText('titleText')">复制</button>
+                                </div>
+                                <div class="card-body">
+                                    <p class="title-text" id="titleText"></p>
+                                </div>
+                            </div>
+
+                            <!-- 卖点列表 -->
+                            <div class="card card-selling">
+                                <div class="card-header">
+                                    <span class="card-icon">✨</span>
+                                    <h3>卖点列表</h3>
+                                    <button class="btn-copy" onclick="copyText('sellingPoints')">复制</button>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="selling-list" id="sellingPoints"></ul>
+                                </div>
+                            </div>
+
+                            <!-- 商品标签 -->
+                            <div class="card card-tags">
+                                <div class="card-header">
+                                    <span class="card-icon">🏷️</span>
+                                    <h3>商品标签</h3>
+                                    <button class="btn-copy" onclick="copyText('tagsList')">复制</button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="tags-list" id="tagsList"></div>
+                                </div>
+                            </div>
+
+                            <!-- 详情页文案 -->
+                            <div class="card card-detail">
+                                <div class="card-header">
+                                    <span class="card-icon">📝</span>
+                                    <h3>详情页文案</h3>
+                                    <button class="btn-copy" onclick="copyText('detailContent')">复制</button>
+                                </div>
+                                <div class="card-body">
+                                    <pre class="detail-content" id="detailContent"></pre>
+                                </div>
+                            </div>
+
+                            <!-- 主图文案建议 -->
+                            <div class="card card-images">
+                                <div class="card-header">
+                                    <span class="card-icon">📸</span>
+                                    <h3>主图文案建议</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="image-suggestions" id="imageSuggestions"></div>
+                                </div>
+                            </div>
+
+                            <!-- 商品信息汇总 -->
+                            <div class="card card-summary">
+                                <div class="card-header">
+                                    <span class="card-icon">📦</span>
+                                    <h3>商品信息</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="info-grid" id="productInfo"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- ============ 我的商品页面 ============ -->
+            <div id="page-products" class="page">
+                <div class="container">
+                    <!-- 店铺选择器 -->
+                    <div class="shop-selector" id="shopSelectorProducts" style="display: none;">
+                        <div class="shop-selector-header">
+                            <span class="shop-selector-title">🏪 当前店铺</span>
+                            <select class="shop-select" id="shopSelectProducts" onchange="switchShopProducts()">
+                                <option value="">全部店铺</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="products-header">
+                        <h2>📦 我的商品</h2>
+                        <div>
+                            <button class="btn btn-secondary btn-sm" onclick="loadMyProducts()">🔄 刷新</button>
+                            <button class="btn btn-sync btn-sm" onclick="syncProducts()">📥 同步微店</button>
+                        </div>
+                    </div>
+                    
+                    <div class="products-list" id="myProductsList">
+                        <div class="empty-state">加载中...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 加载状态 -->
+            <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>AI正在生成文案...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- 提示消息 -->
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script>
+        // 全局状态
+        let currentUser = null;
+        let currentShop = null;
+        let userShops = [];
+        let currentProductData = null;
+        
+        // API基础URL
+        const API_BASE = window.location.origin;
+        
+        // 页面加载初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+        });
+        
+        // 初始化应用
+        async function initApp() {
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                // 未登录，跳转到登录页
+                window.location.href = '/login';
+                return;
+            }
+            
+            // 获取用户信息
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/me`, {
+                    headers: { 'Authorization': token }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('获取用户信息失败');
+                }
+                
+                const data = await response.json();
+                currentUser = data.user;
+                
+                // 渲染用户信息
+                renderUserInfo();
+                
+                // 加载用户店铺
+                await loadUserShops();
+                
+            } catch (error) {
+                console.error('初始化失败:', error);
+                // 清除登录状态并跳转
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            }
+        }
+        
+        // 渲染用户信息
+        function renderUserInfo() {
+            if (!currentUser) return;
+            
+            const section = document.getElementById('userSection');
+            const initial = currentUser.nickname ? currentUser.nickname[0] : 'U';
+            
+            section.innerHTML = `
+                <div class="user-avatar">${initial}</div>
+                <div class="user-info">
+                    <div class="user-name">${currentUser.nickname || '用户'}</div>
+                    <div class="user-shop" id="currentShopName">未选择店铺</div>
+                </div>
+                <button class="btn-logout" onclick="logout()">退出</button>
+            `;
+        }
+        
+        // 加载用户店铺列表
+        async function loadUserShops() {
+            const token = localStorage.getItem('token');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/shops`, {
+                    headers: { 'Authorization': token }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    userShops = data.shops;
+                    renderShopSelector();
+                    renderShopSelectorProducts();
+                    
+                    // 如果没有店铺，显示关联提示
+                    if (userShops.length === 0) {
+                        document.getElementById('noShopAlert').style.display = 'flex';
+                        document.getElementById('shopSelector').style.display = 'none';
+                    } else {
+                        document.getElementById('noShopAlert').style.display = 'none';
+                        document.getElementById('shopSelector').style.display = 'block';
+                        
+                        // 设置默认店铺
+                        currentShop = userShops[0];
+                        updateCurrentShopDisplay();
+                        
+                        // 更新权限显示
+                        updatePermissionDisplay();
+                    }
+                }
+            } catch (error) {
+                console.error('加载店铺失败:', error);
+            }
+        }
+        
+        // 渲染店铺选择器
+        function renderShopSelector() {
+            const select = document.getElementById('shopSelect');
+            select.innerHTML = '<option value="">选择店铺...</option>';
+            
+            userShops.forEach(shop => {
+                const option = document.createElement('option');
+                option.value = shop.id;
+                option.textContent = shop.name;
+                if (currentShop && shop.id === currentShop.id) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+        
+        // 渲染商品页面的店铺选择器
+        function renderShopSelectorProducts() {
+            const select = document.getElementById('shopSelectProducts');
+            select.innerHTML = '<option value="">全部店铺</option>';
+            
+            userShops.forEach(shop => {
+                const option = document.createElement('option');
+                option.value = shop.id;
+                option.textContent = shop.name;
+                select.appendChild(option);
+            });
+            
+            if (userShops.length > 0) {
+                document.getElementById('shopSelectorProducts').style.display = 'block';
+            }
+        }
+        
+        // 切换店铺
+        async function switchShop() {
+            const select = document.getElementById('shopSelect');
+            const shopId = select.value;
+            
+            if (!shopId) return;
+            
+            const token = localStorage.getItem('token');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/shops/switch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token
+                    },
+                    body: JSON.stringify({ shop_id: shopId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentShop = data.shop;
+                    updateCurrentShopDisplay();
+                    updatePermissionDisplay();
+                    showToast(`已切换到：${currentShop.name}`, 'success');
+                } else {
+                    showToast(data.error || '切换店铺失败', 'error');
+                }
+            } catch (error) {
+                console.error('切换店铺失败:', error);
+                showToast('切换店铺失败', 'error');
+            }
+        }
+        
+        // 商品页面切换店铺
+        function switchShopProducts() {
+            loadMyProducts();
+        }
+        
+        // 更新当前店铺显示
+        function updateCurrentShopDisplay() {
+            if (!currentShop) return;
+            
+            // 更新顶部显示
+            const shopNameEl = document.getElementById('currentShopName');
+            if (shopNameEl) {
+                shopNameEl.textContent = currentShop.name;
+            }
+            
+            // 更新店铺信息区
+            const shopInfo = document.getElementById('shopInfo');
+            const perms = currentShop.permissions || [];
+            
+            let permHtml = '';
+            if (perms.includes('publish')) {
+                permHtml += '<span class="permission-tag can-publish">可上架</span>';
+            } else if (perms.includes('edit')) {
+                permHtml += '<span class="permission-tag can-edit">可编辑</span>';
+            } else {
+                permHtml += '<span class="permission-tag view-only">仅查看</span>';
+            }
+            
+            shopInfo.innerHTML = `
+                <div class="shop-info-item">
+                    <span class="shop-info-label">店铺ID：</span>
+                    <span class="shop-info-value">${currentShop.id}</span>
+                </div>
+                <div class="shop-info-item">
+                    <span class="shop-info-label">权限：</span>
+                    <span>${permHtml}</span>
+                </div>
+            `;
+        }
+        
+        // 更新权限显示
+        function updatePermissionDisplay() {
+            if (!currentShop) return;
+            
+            const perms = currentShop.permissions || [];
+            const canPublish = perms.includes('publish');
+            
+            // 更新上架按钮状态
+            const publishBtn = document.getElementById('publishBtn');
+            const permissionDenied = document.getElementById('permissionDenied');
+            
+            if (!canPublish) {
+                publishBtn.style.display = 'none';
+                permissionDenied.style.display = 'block';
+            } else {
+                publishBtn.style.display = 'inline-block';
+                permissionDenied.style.display = 'none';
+            }
+        }
+        
+        // 退出登录
+        async function logout() {
+            const token = localStorage.getItem('token');
+            
+            try {
+                await fetch(`${API_BASE}/api/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Authorization': token }
+                });
+            } catch (error) {
+                console.error('退出失败:', error);
+            }
+            
+            // 清除本地存储
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            // 跳转登录页
+            window.location.href = '/login';
+        }
+        
+        // 显示关联店铺弹窗（简化版，直接创建一个测试店铺）
+        async function showAssociateShopModal() {
+            const shopName = prompt('请输入店铺名称：');
+            if (!shopName) return;
+            
+            const token = localStorage.getItem('token');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/shops/associate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token
+                    },
+                    body: JSON.stringify({ shop_name: shopName })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('店铺关联成功！', 'success');
+                    await loadUserShops();
+                } else {
+                    showToast(data.error || '关联失败', 'error');
+                }
+            } catch (error) {
+                console.error('关联店铺失败:', error);
+                showToast('关联店铺失败', 'error');
+            }
+        }
+        
+        // 页面切换
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + page).classList.add('active');
+            
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (page === 'products') {
+                loadMyProducts();
+            }
+        }
+        
+        // 重写原app.js中的函数，添加认证
+        
+        // 获取认证头
+        function getAuthHeaders() {
+            const token = localStorage.getItem('token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': token
+            };
+        }
+        
+        // 显示提示
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show';
+            
+            if (type === 'error') {
+                toast.style.background = '#EF4444';
+            } else if (type === 'success') {
+                toast.style.background = '#07C160';
+            } else {
+                toast.style.background = '#333';
+            }
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

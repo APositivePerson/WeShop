@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 微信小店AI上架助手</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        
+        .logo-section {
+            margin-bottom: 30px;
+        }
+        
+        .logo-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+        
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .logo-subtitle {
+            color: #666;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        
+        .login-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 5px;
+        }
+        
+        .login-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.3s;
+        }
+        
+        .login-tab.active {
+            background: #07C160;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .login-content {
+            min-height: 280px;
+        }
+        
+        .login-panel {
+            display: none;
+        }
+        
+        .login-panel.active {
+            display: block;
+        }
+        
+        .qr-section {
+            padding: 20px 0;
+        }
+        
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .qr-code img {
+            width: 180px;
+            height: 180px;
+            border-radius: 8px;
+        }
+        
+        .qr-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .qr-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #07C160;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .qr-tips {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .qr-tips .wechat-icon {
+            color: #07C160;
+            font-size: 18px;
+            vertical-align: middle;
+        }
+        
+        .mock-login-section {
+            padding: 20px 0;
+        }
+        
+        .mock-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        
+        .mock-input:focus {
+            outline: none;
+            border-color: #07C160;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #07C160;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover {
+            background: #06ae56;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(7, 193, 96, 0.3);
+        }
+        
+        .btn-login:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .login-tips {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #eee;
+        }
+        
+        .login-tips h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .login-tips ul {
+            text-align: left;
+            color: #888;
+            font-size: 13px;
+            line-height: 1.8;
+            padding-left: 20px;
+        }
+        
+        .login-tips li {
+            margin-bottom: 5px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.error {
+            background: #EF4444;
+        }
+        
+        .toast.success {
+            background: #07C160;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #666;
+            margin-top: 15px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+        
+        .status-dot.waiting {
+            background: #F59E0B;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .status-dot.scanned {
+            background: #3B82F6;
+        }
+        
+        .status-dot.success {
+            background: #07C160;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <div class="logo-icon">🛍️</div>
+            <div class="logo-text">微信小店AI上架助手</div>
+            <div class="logo-subtitle">AI驱动，轻松管理您的微信小店</div>
+        </div>
+        
+        <div class="login-tabs">
+            <button class="login-tab active" onclick="switchTab('wechat')">微信扫码</button>
+            <button class="login-tab" onclick="switchTab('mock')">快速体验</button>
+        </div>
+        
+        <div class="login-content">
+            <!-- 微信扫码登录 -->
+            <div class="login-panel active" id="panel-wechat">
+                <div class="qr-section">
+                    <div class="qr-code" id="qrCode">
+                        <div class="qr-loading">
+                            <div class="qr-spinner"></div>
+                        </div>
+                    </div>
+                    <div class="qr-tips">
+                        <span class="wechat-icon">💬</span>
+                        请使用微信扫一扫登录
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot waiting" id="statusDot"></span>
+                        <span id="statusText">等待扫码...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 模拟登录（开发测试） -->
+            <div class="login-panel" id="panel-mock">
+                <div class="mock-login-section">
+                    <input type="text" class="mock-input" id="mockNickname" placeholder="输入昵称（可选）" value="测试用户">
+                    <button class="btn-login" onclick="mockLogin()">
+                        立即体验
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="login-tips">
+            <h4>✨ 登录后可使用</h4>
+            <ul>
+                <li>关联并管理您的微信小店</li>
+                <li>AI自动生成商品文案</li>
+                <li>一键上架到指定店铺</li>
+                <li>多店铺商品统一管理</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        const API_BASE = window.location.origin;
+        let currentSceneId = null;
+        let checkInterval = null;
+        
+        // 页面加载时检查是否已登录
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                // 验证token有效性
+                checkToken(token);
+            } else {
+                // 获取二维码
+                getQRCode();
+            }
+        });
+        
+        // 切换标签
+        function switchTab(tab) {
+            document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.login-panel').forEach(p => p.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`panel-${tab}`).classList.add('active');
+            
+            // 停止轮询
+            if (checkInterval) {
+                clearInterval(checkInterval);
+                checkInterval = null;
+            }
+            
+            // 如果切回微信扫码，重新获取二维码
+            if (tab === 'wechat') {
+                getQRCode();
+            }
+        }
+        
+        // 获取二维码
+        async function getQRCode() {
+            try {
+                const qrCodeEl = document.getElementById('qrCode');
+                qrCodeEl.innerHTML = `
+                    <div class="qr-loading">
+                        <div class="qr-spinner"></div>
+                    </div>
+                `;
+                
+                const response = await fetch(`${API_BASE}/api/auth/qr-code`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentSceneId = data.scene_id;
+                    
+                    // 显示二维码
+                    qrCodeEl.innerHTML = `<img src="${data.qr_url}" alt="微信登录二维码">`;
+                    
+                    // 开始轮询检查登录状态
+                    startPolling();
+                } else {
+                    qrCodeEl.innerHTML = `
+                        <div style="color: #999; text-align: center;">
+                            <p>获取二维码失败</p>
+                            <p style="font-size: 12px;">${data.error || '请稍后重试'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('获取二维码失败:', error);
+                document.getElementById('qrCode').innerHTML = `
+                    <div style="color: #999; text-align: center;">
+                        <p>网络错误</p>
+                        <p style="font-size: 12px;">请检查网络连接</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 开始轮询登录状态
+        function startPolling() {
+            if (checkInterval) {
+                clearInterval(checkInterval);
+            }
+            
+            updateStatus('waiting', '等待扫码...');
+            
+            checkInterval = setInterval(async () => {
+                if (!currentSceneId) return;
+                
+                try {
+                    const response = await fetch(`${API_BASE}/api/auth/check`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ scene_id: currentSceneId })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.logged_in) {
+                        // 登录成功
+                        clearInterval(checkInterval);
+                        updateStatus('success', '登录成功！');
+                        
+                        // 保存用户信息
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        
+                        showToast('登录成功，正在跳转...', 'success');
+                        
+                        // 跳转到主页
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    } else if (data.expired) {
+                        // 二维码过期
+                        clearInterval(checkInterval);
+                        updateStatus('waiting', '二维码已过期，刷新中...');
+                        getQRCode();
+                    } else if (data.status === 'scanned') {
+                        updateStatus('scanned', '已扫码，确认登录...');
+                    }
+                } catch (error) {
+                    console.error('检查登录状态失败:', error);
+                }
+            }, 2000); // 每2秒检查一次
+        }
+        
+        // 模拟登录
+        async function mockLogin() {
+            const nickname = document.getElementById('mockNickname').value || '测试用户';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/check`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mock: true })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    showToast('登录成功，正在跳转...', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    showToast(data.error || '登录失败', 'error');
+                }
+            } catch (error) {
+                console.error('登录失败:', error);
+                showToast('登录失败，请重试', 'error');
+            }
+        }
+        
+        // 检查token有效性
+        async function checkToken(token) {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/me`, {
+                    headers: { 'Authorization': token }
+                });
+                
+                if (response.ok) {
+                    // token有效，直接跳转
+                    window.location.href = '/';
+                } else {
+                    // token无效，清除并获取二维码
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    getQRCode();
+                }
+            } catch (error) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                getQRCode();
+            }
+        }
+        
+        // 更新状态显示
+        function updateStatus(status, text) {
+            const dot = document.getElementById('statusDot');
+            const textEl = document.getElementById('statusText');
+            
+            dot.className = 'status-dot ' + status;
+            textEl.textContent = text;
+        }
+        
+        // 显示提示
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

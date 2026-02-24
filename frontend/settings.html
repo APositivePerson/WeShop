@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信小店设置 - AI上架助手</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .settings-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .settings-title {
+            font-size: 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #07C160;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 6px;
+        }
+        .btn-save {
+            background: #07C160;
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .btn-save:hover { background: #06a050; }
+        .btn-test {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        .status-connected {
+            background: #e6f7e6;
+            color: #07C160;
+        }
+        .status-disconnected {
+            background: #fff2f0;
+            color: #ff4d4f;
+        }
+        .shop-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .shop-card h3 {
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .shop-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .shop-info-row:last-child {
+            border-bottom: none;
+        }
+        .instructions {
+            background: #fffbe6;
+            border: 1px solid #ffe58f;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .instructions h4 {
+            margin-bottom: 10px;
+            color: #d48806;
+        }
+        .instructions ol {
+            margin-left: 20px;
+            color: #666;
+            line-height: 1.8;
+        }
+        .instructions code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🛍️</span>
+                <span class="logo-text">微信小店AI上架助手</span>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link">商品生成</a>
+                <a href="/#products" class="nav-link" onclick="localStorage.setItem('activePage', 'products')">我的商品</a>
+                <a href="/settings" class="nav-link active">⚙️ 设置</a>
+            </nav>
+        </header>
+
+        <main class="main">
+            <div class="settings-container">
+                <h1 class="settings-title">⚙️ 微信小店设置</h1>
+                
+                <!-- 连接状态 -->
+                <div id="connectionStatus"></div>
+                
+                <!-- 使用说明 -->
+                <div class="instructions">
+                    <h4>📖 如何获取配置信息</h4>
+                    <ol>
+                        <li>登录 <a href="https://mp.weixin.qq.com" target="_blank">微信公众平台</a></li>
+                        <li>进入「开发」→「开发管理」→「开发设置」</li>
+                        <li>复制 <code>AppID</code> 和 <code>AppSecret</code></li>
+                        <li>确保小程序已开通「微信小店」功能</li>
+                    </ol>
+                </div>
+
+                <!-- 配置表单 -->
+                <form id="configForm">
+                    <div class="form-group">
+                        <label>AppID</label>
+                        <input type="text" id="appId" placeholder="wx1234567890abcdef">
+                        <div class="help-text">小程序的 AppID</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>AppSecret</label>
+                        <input type="password" id="appSecret" placeholder="输入你的 AppSecret">
+                        <div class="help-text">小程序的 AppSecret（请妥善保管）</div>
+                    </div>
+                    
+                    <button type="button" class="btn-test" onclick="testConnection()">🔌 测试连接</button>
+                    <div id="testResult" style="margin-top: 10px;"></div>
+                    
+                    <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;">
+                    
+                    <button type="submit" class="btn-save">💾 保存配置</button>
+                </form>
+
+                <!-- 店铺信息 -->
+                <div id="shopInfo" style="display: none;"></div>
+            </div>
+        </main>
+
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script>
+        const API_BASE = window.location.origin;
+        
+        // 加载当前配置
+        async function loadConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/api/config/current`);
+                const data = await response.json();
+                
+                if (data.config) {
+                    document.getElementById('appId').value = data.config.app_id || '';
+                    // 不显示secret，保持安全
+                }
+                
+                updateConnectionStatus(data.connected, data.shop_info);
+            } catch (e) {
+                console.error('加载配置失败', e);
+            }
+        }
+        
+        // 更新连接状态显示
+        function updateConnectionStatus(connected, shopInfo) {
+            const statusDiv = document.getElementById('connectionStatus');
+            
+            if (connected) {
+                statusDiv.innerHTML = `
+                    <div class="status-badge status-connected">
+                        <span>✓</span> 已连接到微信小店
+                    </div>
+                `;
+                
+                if (shopInfo) {
+                    document.getElementById('shopInfo').style.display = 'block';
+                    document.getElementById('shopInfo').innerHTML = `
+                        <div class="shop-card">
+                            <h3>📦 店铺信息</h3>
+                            <div class="shop-info-row">
+                                <span>店铺名称</span>
+                                <strong>${shopInfo.shop_name || '未知'}</strong>
+                            </div>
+                            <div class="shop-info-row">
+                                <span>商品数量</span>
+                                <strong>${shopInfo.product_count || 0}</strong>
+                            </div>
+                            <div class="shop-info-row">
+                                <span>状态</span>
+                                <strong>${shopInfo.status || '正常'}</strong>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="status-badge status-disconnected">
+                        <span>✗</span> 未连接
+                    </div>
+                `;
+            }
+        }
+        
+        // 测试连接
+        async function testConnection() {
+            const btn = document.querySelector('.btn-test');
+            const resultDiv = document.getElementById('testResult');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ 测试中...';
+            
+            const appId = document.getElementById('appId').value.trim();
+            const appSecret = document.getElementById('appSecret').value.trim();
+            
+            if (!appId || !appSecret) {
+                resultDiv.innerHTML = '<span style="color: #ff4d4f;">请填写 AppID 和 AppSecret</span>';
+                btn.disabled = false;
+                btn.textContent = '🔌 测试连接';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/config/test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ app_id: appId, app_secret: appSecret })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = '<span style="color: #07C160;">✓ 连接成功！' + data.message + '</span>';
+                } else {
+                    resultDiv.innerHTML = '<span style="color: #ff4d4f;">✗ ' + data.message + '</span>';
+                }
+            } catch (e) {
+                resultDiv.innerHTML = '<span style="color: #ff4d4f;">✗ 网络错误</span>';
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '🔌 测试连接';
+        }
+        
+        // 保存配置
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const appId = document.getElementById('appId').value.trim();
+            const appSecret = document.getElementById('appSecret').value.trim();
+            
+            if (!appId) {
+                showToast('请填写 AppID', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/config/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ app_id: appId, app_secret: appSecret })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('配置保存成功！', 'success');
+                    loadConfig(); // 刷新状态
+                } else {
+                    showToast(data.message || '保存失败', 'error');
+                }
+            } catch (e) {
+                showToast('保存失败', 'error');
+            }
+        });
+        
+        // 页面加载时获取配置
+        loadConfig();
+    </script>
+</body>
+</html>
