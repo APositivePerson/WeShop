@@ -147,10 +147,6 @@ POST https://api.weixin.qq.com/shop/product/add
 - [ ] 库存预警
 - [ ] 数据分析看板
 
-## 📄 License
-
-MIT
-
 ---
 
 有问题或建议？欢迎提Issue！
